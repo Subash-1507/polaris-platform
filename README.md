@@ -84,6 +84,7 @@ flowchart TB
 
 | Folder | Contents |
 |---|---|
+| `infra/` | Azure setup scripts and shared names (`env.sh`) |
 | `app/` | polaris-api source, tests, Dockerfile |
 | `helm/` | Helm chart for polaris-api |
 | `k8s/` | Redis, PostgreSQL, gateway, Vault Secrets Operator manifests |
@@ -94,7 +95,11 @@ flowchart TB
 | `runbooks/` | One runbook per alert |
 | `drills/` | Evidence from operations drills |
 | `rca/` | Root-cause analysis reports |
-| `docs/` | Notes and diagrams |
+| `docs/` | Notes, diagrams and decision records |
+
+## Decisions
+
+- [0001: Deploy to Southeast Asia on B-series v2 VMs](docs/decisions/0001-region-southeastasia.md)
 
 ## Cost control
 
@@ -111,3 +116,10 @@ Start again:
 az aks start --resource-group rg-polaris-devops --name aks-polaris
 az vm start --resource-group rg-polaris-devops --name vm-polaris-jenkins
 ```
+
+---
+
+## Author
+
+**Subash Chandra Bose**: DevOps, Cloud & Security Engineer · Microsoft Certified (SC-500, AZ-104, SC-200)
+[Portfolio](https://subash-1507.github.io) · [LinkedIn](https://www.linkedin.com/in/subash-chandra-bose-014bb21b5) · [GitHub](https://github.com/Subash-1507)
