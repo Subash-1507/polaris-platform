@@ -1,0 +1,32 @@
+# ---------- Python ----------
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# ---------- Editors / OS ----------
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+
+# ---------- Helm ----------
+*.tgz
+
+# ---------- Terraform (stretch goal) ----------
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+
+# ---------- SECRETS: never commit ----------
+.env
+*.env
+*.pem
+*.key
+*.pfx
+kubeconfig*
+*.kubeconfig
+vault-init*.json
+unseal-keys*
