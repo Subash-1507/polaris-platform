@@ -49,6 +49,7 @@ flowchart TB
 | Area | Tool |
 |---|---|
 | Cloud | Azure (AKS, ACR, VM), region `southeastasia` |
+| IaC | Terraform (azurerm 4.x, remote state in Azure Storage), TFLint |
 | CI/CD | Jenkins (Docker on VM), Helm, Trivy |
 | Secrets & PKI | HashiCorp Vault + Vault Secrets Operator |
 | Data | Redis (TLS + ACL), PostgreSQL |
@@ -58,18 +59,20 @@ flowchart TB
 
 ## Environment
 
-| Resource | Name | Size |
+| Resource | Name | Details |
 |---|---|---|
-| Resource group | `rg-polaris-devops` | — |
-| Container registry | `acrpolaris4827` | Basic |
-| AKS cluster | `aks-polaris` | 1 × Standard_B2as_v2 (2 vCPU / 8 GB) |
-| Jenkins VM | `vm-polaris-jenkins` | Standard_B2als_v2 (2 vCPU / 4 GB) |
-| Namespaces | `dev`, `prod`, `platform-ops` | — |
+| Resource group | `rg-polaris-devops` | All platform resources |
+| Container registry | `acrpolaris4827` | Basic, admin user disabled |
+| AKS cluster | `aks-polaris` | 1 × Standard_B2as_v2 (2 vCPU / 8 GB), Kubernetes 1.36, Azure CNI Overlay + Cilium |
+| Jenkins VM | `vm-polaris-jenkins` | Standard_B2als_v2 (2 vCPU / 4 GB), Ubuntu 24.04, managed identity |
+| Network | `vnet-polaris` (10.10.0.0/16), `nsg-polaris-jenkins` | SSH from the admin IP only |
+| Namespaces | `dev`, `prod`, `platform-ops` | Pod Security labels |
+| Terraform state | `stpolaristf4827` in `rg-polaris-tfstate` | Entra ID auth only, versioning + soft delete |
 
 ## Roadmap
 
 - [x] Phase 0 — Accounts, tools, region & quota checks
-- [ ] Phase 1 — Azure infrastructure (RG, ACR, AKS, Jenkins VM)
+- [x] Phase 1 — Azure infrastructure in Terraform (RG, ACR, AKS, Jenkins VM)
 - [ ] Phase 2 — Jenkins controller in Docker
 - [ ] Phase 3 — Vault + Vault Secrets Operator
 - [ ] Phase 4 — Redis (TLS, ACL) + PostgreSQL
@@ -84,22 +87,49 @@ flowchart TB
 
 | Folder | Contents |
 |---|---|
-| `infra/` | Azure setup scripts and shared names (`env.sh`) |
+| `infra/` | Terraform (`terraform/`), state bootstrap, shared names (`env.sh`), Jenkins VM public key |
 | `app/` | polaris-api source, tests, Dockerfile |
 | `helm/` | Helm chart for polaris-api |
-| `k8s/` | Redis, PostgreSQL, gateway, Vault Secrets Operator manifests |
+| `k8s/` | Namespaces, Redis, PostgreSQL, gateway, Vault Secrets Operator manifests |
 | `vault/` | Vault policies and setup scripts |
 | `jenkins/` | Jenkins controller image and ops jobs |
 | `apigee/` | API proxy bundle |
 | `datadog/` | Monitors and dashboards as code |
-| `runbooks/` | One runbook per alert |
+| `runbooks/` | Operational runbooks (symptom → cause → fix) |
 | `drills/` | Evidence from operations drills |
 | `rca/` | Root-cause analysis reports |
 | `docs/` | Notes, diagrams and decision records |
 
+## Infrastructure as code
+
+All Azure resources are managed with Terraform in `infra/terraform/`. State is stored remotely
+in Azure Storage with Entra ID auth (no account keys), versioning and soft delete.
+Kubernetes objects live in `k8s/` and `helm/`.
+
+```bash
+source infra/env.sh             # names, subscription ID, your IP for the SSH rule
+cd infra/terraform
+terraform init
+terraform plan -out=tfplan      # review the plan
+terraform apply tfplan          # apply exactly what was reviewed
+```
+
+**Security baseline**
+
+- No stored cloud credentials: AKS pulls from ACR (`AcrPull`), Jenkins pushes (`AcrPush`) and
+  deploys (`AKS Cluster User`) with managed identities
+- Jenkins VM: SSH key only; the NSG allows port 22 from the admin IP only; the Jenkins UI is
+  reached through an SSH tunnel, never exposed
+- ACR admin user disabled; `dev` and `prod` enforce Pod Security `baseline`
+
 ## Decisions
 
 - [0001: Deploy to Southeast Asia on B-series v2 VMs](docs/decisions/0001-region-southeastasia.md)
+- [0002: Manage Azure infrastructure with Terraform and remote state](docs/decisions/0002-terraform-remote-state.md)
+
+## Runbooks
+
+- [Jenkins VM SSH access](runbooks/jenkins-vm-ssh-access.md)
 
 ## Cost control
 
@@ -116,6 +146,8 @@ Start again:
 az aks start --resource-group rg-polaris-devops --name aks-polaris
 az vm start --resource-group rg-polaris-devops --name vm-polaris-jenkins
 ```
+
+The Jenkins VM also shuts down automatically at 23:00 IST. Start AKS before running `terraform apply`.
 
 ---
 
