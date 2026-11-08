@@ -29,3 +29,21 @@ variable "tags" {
     env     = "lab"
   }
 }
+
+variable "aks_name" {
+  description = "AKS cluster name"
+  type        = string
+  default     = "aks-polaris"
+}
+
+variable "kubernetes_version" {
+  description = "AKS Kubernetes minor version; upgrades are a reviewed one-line change"
+  type        = string
+  default     = "1.36"
+}
+
+variable "aks_node_size" {
+  description = "VM size for the single system node (see ADR 0001)"
+  type        = string
+  default     = "Standard_B2as_v2"
+}
