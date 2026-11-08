@@ -10,12 +10,17 @@
       "version": "3.12"
     },
     "ghcr.io/devcontainers/features/docker-in-docker:2": {},
-    "ghcr.io/devcontainers/features/github-cli:1": {}
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/terraform:1": {
+      "version": "latest",
+      "tflint": "latest"
+    }
   },
-  "postCreateCommand": "sudo apt-get update && sudo apt-get install -y jq",
+  "postCreateCommand": "sudo apt-get update && sudo apt-get install -y jq && git config --global push.autoSetupRemote true",
   "customizations": {
     "vscode": {
       "extensions": [
+        "hashicorp.terraform",
         "redhat.vscode-yaml",
         "ms-kubernetes-tools.vscode-kubernetes-tools",
         "ms-python.python",

@@ -1,0 +1,32 @@
+# Polaris namespaces with Pod Security Standards (PSS) labels.
+# enforce = pods that break the rule are REJECTED; warn = allowed, but kubectl prints a warning.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dev
+  labels:
+    project: polaris
+    env: dev
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/warn: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: prod
+  labels:
+    project: polaris
+    env: prod
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/warn: restricted
+---
+# Datadog Agent needs hostPath/host PID access, so this namespace is privileged.
+# Keep it limited to platform tooling only.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: platform-ops
+  labels:
+    project: polaris
+    env: shared
+    pod-security.kubernetes.io/enforce: privileged
