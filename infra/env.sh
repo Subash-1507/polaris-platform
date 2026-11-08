@@ -17,3 +17,9 @@ export AKS_NODE_SIZE="Standard_B2as_v2"
 export VM_NAME="vm-polaris-jenkins"
 export VM_SIZE="Standard_B2als_v2"
 export VM_USER="azureuser"
+
+
+# Terraform remote state: separate resource group, so `terraform destroy` never deletes it
+export TFSTATE_RG="rg-polaris-tfstate"
+export TFSTATE_SA="stpolaristf4827"
+export TFSTATE_CONTAINER="tfstate"
