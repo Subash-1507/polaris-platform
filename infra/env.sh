@@ -26,3 +26,8 @@ export TFSTATE_CONTAINER="tfstate"
 
 # Terraform: subscription ID passed in as a variable (kept out of the code)
 export TF_VAR_subscription_id="$(az account show --query id -o tsv 2>/dev/null || true)"
+
+
+# Your current public IP; the Jenkins VM's NSG allows SSH only from here.
+# The codespace IP changes between sessions, so re-run `source infra/env.sh` + `terraform apply` to update the rule.
+export TF_VAR_admin_source_cidr="$(curl -s --max-time 5 https://api.ipify.org)/32"

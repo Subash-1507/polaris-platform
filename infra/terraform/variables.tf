@@ -47,3 +47,31 @@ variable "aks_node_size" {
   type        = string
   default     = "Standard_B2as_v2"
 }
+
+variable "vm_name" {
+  description = "Jenkins VM name"
+  type        = string
+  default     = "vm-polaris-jenkins"
+}
+
+variable "vm_size" {
+  description = "Jenkins VM size (see ADR 0001)"
+  type        = string
+  default     = "Standard_B2als_v2"
+}
+
+variable "vm_admin_username" {
+  description = "Admin user on the Jenkins VM (SSH key only)"
+  type        = string
+  default     = "azureuser"
+}
+
+variable "admin_source_cidr" {
+  description = "Your public IP as /32, allowed to SSH to the Jenkins VM (set via TF_VAR_admin_source_cidr in infra/env.sh)"
+  type        = string
+
+  validation {
+    condition     = can(cidrhost(var.admin_source_cidr, 0)) && endswith(var.admin_source_cidr, "/32")
+    error_message = "admin_source_cidr must be one IP like 203.0.113.10/32. Run: source infra/env.sh"
+  }
+}
