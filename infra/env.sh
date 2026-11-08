@@ -23,3 +23,6 @@ export VM_USER="azureuser"
 export TFSTATE_RG="rg-polaris-tfstate"
 export TFSTATE_SA="stpolaristf4827"
 export TFSTATE_CONTAINER="tfstate"
+
+# Terraform: subscription ID passed in as a variable (kept out of the code)
+export TF_VAR_subscription_id="$(az account show --query id -o tsv 2>/dev/null || true)"
