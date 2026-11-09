@@ -1,0 +1,21 @@
+# Jenkins controller configuration as code (JCasC).
+# Applied at every start; manual UI changes to these settings are overwritten on restart.
+jenkins:
+  systemMessage: "Polaris Jenkins: configured as code from jenkins/casc in polaris-platform."
+  numExecutors: 0 # builds never run on the controller
+  mode: EXCLUSIVE
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "admin"
+          name: "Polaris Admin"
+          # Docker secret mounted at /run/secrets/jenkins_admin_password (never in Git)
+          password: "${jenkins_admin_password}"
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+
+unclassified:
+  location:
+    url: "http://localhost:8080/"

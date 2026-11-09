@@ -1,0 +1,33 @@
+# Polaris Jenkins stack. Run on vm-polaris-jenkins, from this folder:
+#   sudo docker compose up -d --build
+name: polaris-jenkins
+
+services:
+  controller:
+    build: ./controller
+    image: polaris/jenkins-controller:2.580.2
+    container_name: jenkins-controller
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080" # localhost only: reached through an SSH tunnel, never exposed
+    environment:
+      CASC_JENKINS_CONFIG: /etc/jenkins/casc
+      JAVA_OPTS: >-
+        -Djenkins.install.runSetupWizard=false
+        -Xmx768m
+    volumes:
+      - /srv/jenkins_home:/var/jenkins_home
+      - ./casc:/etc/jenkins/casc:ro
+    secrets:
+      - jenkins_admin_password
+    mem_limit: 1280m
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://localhost:8080/login"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 180s
+
+secrets:
+  jenkins_admin_password:
+    file: /opt/polaris/secrets/jenkins_admin_password
