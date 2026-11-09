@@ -15,6 +15,16 @@ jenkins:
   authorizationStrategy:
     loggedInUsersCanDoAnything:
       allowAnonymousRead: false
+  nodes:
+    - permanent:
+        name: "docker-agent"
+        labelString: "docker linux"
+        numExecutors: 1 # one build at a time on a 4 GB VM
+        remoteFS: "/home/jenkins/agent"
+        retentionStrategy: "always"
+        launcher:
+          inbound:
+            webSocket: true # agent connects over port 8080; no extra port needed
 
 unclassified:
   location:
