@@ -16,10 +16,25 @@ SSH times out? See [Jenkins VM SSH access](jenkins-vm-ssh-access.md), Symptom A.
 
 ## Deploy a change (after merging to main)
 
+1. Pull and rebuild (recreates containers only if an image or `docker-compose.yml` changed):
+
 ```bash
 cd /opt/polaris/polaris-platform && sudo git pull && cd jenkins && sudo docker compose up -d --build
+```
+
+2. Check:
+
+```bash
 sudo docker compose ps --format '{{.Name}}: {{.Image}} {{.Status}}'
 sudo docker compose logs controller 2>&1 | grep -iE "SEVERE|ConfiguratorException" | head -5
+```
+
+3. **If `jenkins/casc/` changed, restart the controller.** JCasC reads its files only at startup,
+   and Compose does not restart a container when only a bind-mounted file changes:
+
+```bash
+sudo docker compose restart controller
+timeout 240 bash -c 'until sudo docker compose logs --since 2m controller 2>&1 | grep -q "fully up and running"; do sleep 5; done' && echo READY
 ```
 
 Healthy result: both containers show **tag names** (not `sha256:`), the controller is
@@ -65,6 +80,19 @@ image ID; running containers stayed on the old, untagged ID.
 ```bash
 echo "zombies: $(ps -eo stat | grep -c '^Z')"          # expect 0
 sudo docker top jenkins-agent -o pid,ppid,comm         # first process: docker-init
+```
+
+## Known issue: JCasC change not applied after deploy
+
+**Symptom:** after merging a change to `jenkins/casc/`, Jenkins still behaves as before
+(for example, a job builds a deleted branch: "Couldn't find any revision to build").
+**Cause:** side effect of the tag-drift fix. Rebuilds now keep the same image ID, so Compose
+no longer recreates the controller, and JCasC is only read at startup.
+**Fix:** step 3 of "Deploy a change": `sudo docker compose restart controller`.
+**Check:** the job's live config shows the expected value:
+
+```bash
+PW=$(sudo cat /opt/polaris/secrets/jenkins_admin_password) && curl -sf -u "admin:$PW" http://127.0.0.1:8080/job/platform-smoke-test/config.xml | grep -oE '\*/[a-z0-9/-]+'; unset PW
 ```
 
 ## Start and stop
