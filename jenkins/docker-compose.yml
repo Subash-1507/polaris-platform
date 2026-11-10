@@ -4,7 +4,9 @@ name: polaris-jenkins
 
 services:
   controller:
-    build: ./controller
+    build:
+      context: ./controller
+      provenance: false # no per-build attestation, so a cached rebuild keeps the same image ID and tags don't drift
     image: polaris/jenkins-controller:2.580.2-jdk25
     container_name: jenkins-controller
     restart: unless-stopped
@@ -29,7 +31,9 @@ services:
       start_period: 180s
 
   agent:
-    build: ./agent
+    build:
+      context: ./agent
+      provenance: false
     image: polaris/jenkins-agent:jdk25
     container_name: jenkins-agent
     restart: unless-stopped
