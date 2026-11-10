@@ -37,6 +37,7 @@ services:
     image: polaris/jenkins-agent:jdk25
     container_name: jenkins-agent
     restart: unless-stopped
+    init: true # run under Docker's tini so finished build processes are reaped (no zombies)
     depends_on:
       controller:
         condition: service_healthy
