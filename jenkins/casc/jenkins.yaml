@@ -39,7 +39,7 @@ jobs:
             scm {
               git {
                 remote { url('https://github.com/Subash-1507/polaris-platform.git') }
-                branch('*/feature/phase-2-jenkins') // switch to */main before merging PR #3
+                branch('*/main')
               }
             }
             scriptPath('jenkins/pipelines/smoke.Jenkinsfile')
