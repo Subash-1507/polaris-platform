@@ -29,3 +29,21 @@ jenkins:
 unclassified:
   location:
     url: "http://localhost:8080/"
+
+jobs:
+  - script: |
+      pipelineJob('platform-smoke-test') {
+        description('Proves the agent can push to ACR and reach AKS using only the VM managed identity. Defined in jenkins/casc/jenkins.yaml.')
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote { url('https://github.com/Subash-1507/polaris-platform.git') }
+                branch('*/feature/phase-2-jenkins') // switch to */main before merging PR #3
+              }
+            }
+            scriptPath('jenkins/pipelines/smoke.Jenkinsfile')
+            lightweight(true)
+          }
+        }
+      }
