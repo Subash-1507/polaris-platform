@@ -1,0 +1,49 @@
+# Jenkins controller configuration as code (JCasC).
+# Applied at every start; manual UI changes to these settings are overwritten on restart.
+jenkins:
+  systemMessage: "Polaris Jenkins: configured as code from jenkins/casc in polaris-platform."
+  numExecutors: 0 # builds never run on the controller
+  mode: EXCLUSIVE
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "admin"
+          name: "Polaris Admin"
+          # Docker secret mounted at /run/secrets/jenkins_admin_password (never in Git)
+          password: "${jenkins_admin_password}"
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+  nodes:
+    - permanent:
+        name: "docker-agent"
+        labelString: "docker linux"
+        numExecutors: 1 # one build at a time on a 4 GB VM
+        remoteFS: "/home/jenkins/agent"
+        retentionStrategy: "always"
+        launcher:
+          inbound:
+            webSocket: true # agent connects over port 8080; no extra port needed
+
+unclassified:
+  location:
+    url: "http://localhost:8080/"
+
+jobs:
+  - script: |
+      pipelineJob('platform-smoke-test') {
+        description('Proves the agent can push to ACR and reach AKS using only the VM managed identity. Defined in jenkins/casc/jenkins.yaml.')
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote { url('https://github.com/Subash-1507/polaris-platform.git') }
+                branch('*/main')
+              }
+            }
+            scriptPath('jenkins/pipelines/smoke.Jenkinsfile')
+            lightweight(true)
+          }
+        }
+      }

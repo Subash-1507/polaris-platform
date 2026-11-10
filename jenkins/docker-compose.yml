@@ -1,0 +1,68 @@
+# Polaris Jenkins stack. Run on vm-polaris-jenkins, from this folder:
+#   sudo docker compose up -d --build
+name: polaris-jenkins
+
+services:
+  controller:
+    build:
+      context: ./controller
+      provenance: false # no per-build attestation, so a cached rebuild keeps the same image ID and tags don't drift
+    image: polaris/jenkins-controller:2.580.2-jdk25
+    container_name: jenkins-controller
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080" # localhost only: reached through an SSH tunnel, never exposed
+    environment:
+      CASC_JENKINS_CONFIG: /etc/jenkins/casc
+      JAVA_OPTS: >-
+        -Djenkins.install.runSetupWizard=false
+        -Xmx768m
+    volumes:
+      - /srv/jenkins_home:/var/jenkins_home
+      - ./casc:/etc/jenkins/casc:ro
+    secrets:
+      - jenkins_admin_password
+    mem_limit: 1280m
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://localhost:8080/login"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 180s
+
+  agent:
+    build:
+      context: ./agent
+      provenance: false
+    image: polaris/jenkins-agent:jdk25
+    container_name: jenkins-agent
+    restart: unless-stopped
+    init: true # run under Docker's tini so finished build processes are reaped (no zombies)
+    depends_on:
+      controller:
+        condition: service_healthy
+    environment:
+      JENKINS_URL: http://controller:8080/
+      JENKINS_AGENT_NAME: docker-agent
+      JENKINS_WEB_SOCKET: "true"
+      JENKINS_SECRET: "@/run/secrets/jenkins_agent_secret" # '@' = read the secret from this file
+      JENKINS_AGENT_WORKDIR: /home/jenkins/agent
+      JAVA_OPTS: -Xmx256m
+    volumes:
+      - agent_workspace:/home/jenkins/agent
+      # Root-equivalent access to the VM's Docker engine: accepted lab risk, see ADR 0003
+      - /var/run/docker.sock:/var/run/docker.sock
+    group_add:
+      - "988" # the VM's docker group, so the jenkins user can use the socket
+    secrets:
+      - jenkins_agent_secret
+    mem_limit: 1024m
+
+volumes:
+  agent_workspace:
+
+secrets:
+  jenkins_admin_password:
+    file: /opt/polaris/secrets/jenkins_admin_password
+  jenkins_agent_secret:
+    file: /opt/polaris/secrets/jenkins_agent_secret
