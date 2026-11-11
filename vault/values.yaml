@@ -1,0 +1,87 @@
+# HashiCorp Vault on AKS: single-node Raft (integrated storage), TLS only, no injector.
+# Install / upgrade (from the repo root):
+#   helm upgrade --install vault hashicorp/vault --version 0.34.1 -n vault -f vault/values.yaml
+global:
+  enabled: true
+  tlsDisable: false # HTTPS only
+
+injector:
+  enabled: false # secrets reach apps through the Vault Secrets Operator, not sidecars
+
+ui:
+  enabled: true # reached with kubectl port-forward only; no public Service
+
+server:
+  image:
+    repository: hashicorp/vault
+    tag: "2.0.4" # pinned; matches chart 0.34.1
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 512Mi # memory limit protects the node; no CPU limit, to avoid throttling
+
+  # Restricted Pod Security profile: non-root, no privilege escalation, no Linux capabilities
+  statefulSet:
+    securityContext:
+      pod:
+        runAsNonRoot: true
+        runAsUser: 100
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      container:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: ["ALL"]
+
+  # TLS certificate from Step 3.2 (secret vault/vault-tls)
+  volumes:
+    - name: vault-tls
+      secret:
+        secretName: vault-tls
+  volumeMounts:
+    - name: vault-tls
+      mountPath: /vault/userconfig/vault-tls
+      readOnly: true
+  extraEnvironmentVars:
+    VAULT_CACERT: /vault/userconfig/vault-tls/ca.crt # the vault CLI inside the pod trusts our CA
+
+  # Persistent Azure Disks: secrets and the audit log survive restarts and new nodes
+  dataStorage:
+    enabled: true
+    size: 2Gi
+    storageClass: managed-csi
+  auditStorage:
+    enabled: true
+    size: 2Gi
+    storageClass: managed-csi
+
+  standalone:
+    enabled: false
+  ha:
+    enabled: true
+    replicas: 1 # single node: fits the quota; Raft makes adding nodes later a config change
+    raft:
+      enabled: true
+      setNodeId: true
+      config: |
+        ui = true
+        disable_mlock = true
+
+        listener "tcp" {
+          address         = "[::]:8200"
+          cluster_address = "[::]:8201"
+          tls_cert_file   = "/vault/userconfig/vault-tls/tls.crt"
+          tls_key_file    = "/vault/userconfig/vault-tls/tls.key"
+          tls_min_version = "tls12"
+        }
+
+        storage "raft" {
+          path = "/vault/data"
+        }
+
+        service_registration "kubernetes" {}

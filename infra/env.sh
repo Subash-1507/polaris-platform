@@ -31,3 +31,8 @@ export TF_VAR_subscription_id="$(az account show --query id -o tsv 2>/dev/null |
 # Your current public IP; the Jenkins VM's NSG allows SSH only from here.
 # The codespace IP changes between sessions, so re-run `source infra/env.sh` + `terraform apply` to update the rule.
 export TF_VAR_admin_source_cidr="$(curl -s --max-time 5 https://api.ipify.org)/32"
+
+
+# Vault: reached through `kubectl -n vault port-forward pod/vault-0 8200:8200`
+export VAULT_ADDR="https://127.0.0.1:8200"
+export VAULT_CACERT="${HOME}/.polaris/vault-tls/ca.crt"
