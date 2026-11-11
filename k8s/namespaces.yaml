@@ -30,3 +30,25 @@ metadata:
     project: polaris
     env: shared
     pod-security.kubernetes.io/enforce: privileged
+---
+# HashiCorp Vault server
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vault
+  labels:
+    project: polaris
+    env: shared
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/warn: restricted
+---
+# Vault Secrets Operator (syncs Vault secrets into Kubernetes Secrets)
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vault-secrets-operator-system
+  labels:
+    project: polaris
+    env: shared
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/warn: restricted
